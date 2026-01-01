@@ -1,4 +1,4 @@
-
+#Here is a projet based on object oriented. It is a portfolio that should allows you to track your position and pnl at the same time. No library needed, only your mind and some time. As usual, let me know what you think. 
 
 class Trade:
     def __init__(self, ticker, side, qty, price, timestamp):
