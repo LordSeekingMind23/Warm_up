@@ -1,0 +1,108 @@
+
+
+class Trade:
+    def __init__(self, ticker, side, qty, price, timestamp):
+        self.ticker = ticker
+        self.side = side.lower()#get all types of side "BUY" or "buy"
+        self.qty = qty
+        self.price = price
+        self.timestamp = timestamp
+
+        if self.side not in ("buy", "sell"):#parameter side must be buy or sell
+            raise ValueError("side must be 'buy' or 'sell'")
+        if self.qty <= 0:#parameter qty must be >0
+            raise ValueError("qty must be > 0")
+
+
+class Position:
+    #set up our position with initial values
+    def __init__(self):
+        self.qty_net = 0.0
+        self.avg_price = 0.0
+        self.realized_pnl = 0.0
+        self.unrealized_pnl = 0.0
+        self.market_price = None
+
+
+    def apply_trade(self, trade):
+        q = trade.qty if trade.side == "buy" else -trade.qty#if buy 10 else -10
+
+        # if the trade is in the same side then we increase position
+        if self.qty_net == 0 or self.qty_net * q > 0:
+            total_value = self.avg_price * abs(self.qty_net) + trade.price * abs(q)#existing position value + new trade value
+            self.qty_net += q#adding to existing position ex: +10 + +5 = +15
+            self.avg_price = total_value / abs(self.qty_net)
+
+    
+        else:
+            closed_qty = min(abs(q), abs(self.qty_net))#close the amount of position possible
+
+        #pnl calculation
+            if self.qty_net > 0:
+                pnl = (trade.price - self.avg_price) * closed_qty
+            else:
+                pnl = (self.avg_price - trade.price) * closed_qty
+        #adding pnl and updating qty_net
+            self.realized_pnl += pnl
+            self.qty_net += q
+
+            # closed position
+            if self.qty_net == 0:
+                self.avg_price = 0.0
+
+            # reverse
+            elif abs(q) > closed_qty:
+                self.avg_price = trade.price
+
+
+    def update_market_price(self, price):
+        self.market_price = price
+
+
+        if self.qty_net == 0:
+            self.unrealized_pnl = 0.0
+        elif self.qty_net > 0:
+            self.unrealized_pnl = (price - self.avg_price) * abs(self.qty_net)#make money if price is higher than avg price for a long position
+        else:
+            self.unrealized_pnl = (self.avg_price - price) * abs(self.qty_net)#make money if price is lower than avg price for a short position
+
+class Portfolio: 
+        
+    def __init__(self):
+        self.positions = {}   # ticker -> Position
+        self.trades = []
+
+    def add_trade(self, trade):
+        self.trades.append(trade)
+
+        if trade.ticker not in self.positions:
+            self.positions[trade.ticker] = Position()
+
+        # appliquer le trade DANS TOUS LES CAS
+        self.positions[trade.ticker].apply_trade(trade)
+
+
+    def update_market_prices(self, prices):
+        for ticker, price in prices.items():
+            if ticker in self.positions:
+                self.positions[ticker].update_market_price(price)
+
+    def total_pnl(self):
+        total = 0.0
+        for pos in self.positions.values():
+           total += pos.realized_pnl + pos.unrealized_pnl
+        return total
+
+    def exposures(self):
+        return {t: pos.qty_net for t, pos in self.positions.items()}
+
+pf = Portfolio()
+pf.add_trade(Trade("AAPL", "buy", 10, 100, "2025-01-01"))
+pf.add_trade(Trade("AAPL", "sell", 5, 120, "2025-02-01"))
+pf.add_trade(Trade("MSFT", "sell", 3, 200, "2025-03-01"))
+pf.add_trade(Trade("TTF":, "buy", 7, 50, "2025-04-01"))
+
+pf.update_market_prices({"AAPL": 130})
+
+print(pf.exposures())
+print(pf.total_pnl())
