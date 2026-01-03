@@ -1,0 +1,49 @@
+#project using OOP and pandas
+#you can use this link to get a dataset for student grades just like this example: 
+https://www.kaggle.com/datasets/nabeelqureshitiii/student-performance-dataset?resource=download
+
+import pandas as pd
+
+class Student: 
+    def __init__(self, student_id, df: pd.DataFrame):#we linked our program to a dataframe
+        self.student_id = student_id
+        self.df = df
+
+    def get_student_info(self)-> pd.DataFrame:#info should be based on the dataframe(this one specifically)
+        return self.df[self.df['student_id']== self.student_id]#we want to filter the dataframe to get the info of a specific student
+
+
+    def mean_score(self)-> float:
+        s= self.get_student_info()["total_score"].mean()#we want to calculate the mean score of the student by using the module "get_student_info"
+        return s
+
+
+class Course: 
+    def __init__(self, df: pd.DataFrame):
+        self.df = df
+
+    def ranking(self) -> pd.DataFrame:#we want to create a ranking of students based on their mean score
+        ranking_df = (
+            self.df
+            .groupby('student_id', as_index=False)['total_score']#for each student_id, we want to group the total_score
+            .mean()#get their mean score
+            .rename(columns={'total_score': 'mean_score'})#rename the column to mean_score
+            .sort_values('mean_score', ascending=False)#make a descending sort based on the mean_score
+        )
+        ranking_df['rank'] = range(1, len(ranking_df) + 1)#add a rank column to the dataframe
+        return ranking_df
+
+
+
+
+#_____print_____
+df=pd.read_csv(r"C:\Users\Maxime Han\Documents\SKEMA\M2\Python\student_performance.csv", sep=";")
+course = Course(df)
+
+
+ranking_df = course.ranking()
+
+
+print(df.head())
+print(df.shape)
+print(ranking_df.head(10))
